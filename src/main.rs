@@ -73,7 +73,9 @@ impl<'a, T> PodBuilder2<'a, T, (Empty<u32>, Empty<&'a T>, WithDefault<f32>)> {
             state: (
                 Empty::default(),
                 Empty::default(),
-                // todo we need a closure in here that sets the default value
+                // @note(georgios) we need a closure in here that sets the default value
+                // but that's no problem :)
+                //
                 WithDefault(Default::default()),
             ),
             phantom: Default::default(),
