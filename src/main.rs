@@ -1,5 +1,4 @@
-use std::marker::PhantomData;
-
+use std::{marker::PhantomData, str::FromStr};
 use typed_builder::TypedBuilder;
 
 #[derive(TypedBuilder, Debug)]
@@ -12,7 +11,8 @@ struct Pod<'a, T> {
 }
 
 pub struct Assigned<T>(T);
-pub struct Empty<T>(::std::marker::PhantomData<T>);
+#[derive(Default)]
+pub struct Empty {}
 
 pub struct WithDefault<T>(T);
 
@@ -21,29 +21,18 @@ trait AssignedOrDefault {
     fn value_or_default(self) -> Self::ValueType;
 }
 
-trait Assignable<Origin: ?Sized> {
-    type AssignedInner;
-    fn assign(self, t: Origin) -> Assigned<Self::AssignedInner>;
+trait Assignable<T> {
+    fn assign(self, t: T) -> Assigned<T>;
 }
 
-impl<T> Assignable<T> for Empty<T> {
-    type AssignedInner = T;
-    fn assign(self, t: T) -> Assigned<Self::AssignedInner> {
+impl<T> Assignable<T> for Empty {
+    fn assign(self, t: T) -> Assigned<T> {
         Assigned(t)
     }
 }
 
-impl<T> Assignable<T> for Empty<Option<T>> {
-    type AssignedInner = Option<T>;
-
-    fn assign(self, t: T) -> Assigned<Self::AssignedInner> {
-        Assigned(Some(t))
-    }
-}
-
 impl<T> Assignable<T> for WithDefault<T> {
-    type AssignedInner = T;
-    fn assign(self, t: T) -> Assigned<Self::AssignedInner> {
+    fn assign(self, t: T) -> Assigned<T> {
         Assigned(t)
     }
 }
@@ -64,18 +53,12 @@ impl<T> AssignedOrDefault for WithDefault<T> {
     }
 }
 
-impl<T> Default for Empty<T> {
-    fn default() -> Self {
-        Self(Default::default())
-    }
-}
-
 struct PodBuilder2<'a, T, State> {
     state: State,
     phantom: PhantomData<&'a T>,
 }
 
-impl<'a, T> PodBuilder2<'a, T, (Empty<u32>, Empty<&'a T>, WithDefault<f32>)> {
+impl<'a, T> PodBuilder2<'a, T, (Empty, Empty, WithDefault<f32>)> {
     pub fn new() -> Self {
         Self {
             state: (
@@ -93,7 +76,7 @@ impl<'a, T> PodBuilder2<'a, T, (Empty<u32>, Empty<&'a T>, WithDefault<f32>)> {
 
 impl<'a, T, U, V, W> PodBuilder2<'a, T, (U, V, W)>
 where
-    U: Assignable<u32, AssignedInner = u32>,
+    U: Assignable<u32>,
 {
     pub fn first(self, first: u32) -> PodBuilder2<'a, T, (Assigned<u32>, V, W)> {
         let state = (self.state.0.assign(first), self.state.1, self.state.2);
@@ -106,7 +89,7 @@ where
 
 impl<'a, T, U, V, W> PodBuilder2<'a, T, (U, V, W)>
 where
-    V: Assignable<&'a T, AssignedInner = &'a T>,
+    V: Assignable<&'a T>,
 {
     pub fn second(self, second: &'a T) -> PodBuilder2<'a, T, (U, Assigned<&'a T>, W)> {
         let state = (self.state.0, self.state.1.assign(second), self.state.2);
@@ -119,9 +102,9 @@ where
 
 impl<'a, T, U, V, W> PodBuilder2<'a, T, (U, V, W)>
 where
-    W: Assignable<f32, AssignedInner = f32>,
+    W: Assignable<f32>,
 {
-    pub fn third(self, third: f32) -> PodBuilder2<'a, T, (U, V, Assigned<W::AssignedInner>)> {
+    pub fn third(self, third: f32) -> PodBuilder2<'a, T, (U, V, Assigned<f32>)> {
         let state = (self.state.0, self.state.1, self.state.2.assign(third));
         PodBuilder2 {
             state,
