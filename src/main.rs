@@ -146,7 +146,7 @@ fn main() {
     // let pod = Pod { x: 313373, s: 1337 };
     // let pod = Pod::builder().x(1).s(2).build();
 
-    let pod = PodBuilder2::new().first("adda").second(&2).build();
+    let pod = PodBuilder2::new().first("adda").second(&2.).build();
     let pod = PodBuilder2::new()
         .second(&1)
         .first(String::from("abc"))
