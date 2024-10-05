@@ -16,6 +16,34 @@ pub struct Empty<T>(PhantomData<T>);
 
 pub struct WithDefault<T>(T);
 
+trait GenerallyAssignable<Origin, Inner> {
+    fn assign(self, from: Origin) -> Assigned<Inner>;
+}
+
+impl<T> GenerallyAssignable<T, T> for Empty<T> {
+    fn assign(self, from: T) -> Assigned<T> {
+        Assigned(from)
+    }
+}
+
+impl<T> GenerallyAssignable<T, Option<T>> for Empty<Option<T>> {
+    fn assign(self, from: T) -> Assigned<Option<T>> {
+        Assigned(Some(from))
+    }
+}
+
+impl<T> GenerallyAssignable<T, T> for WithDefault<T> {
+    fn assign(self, from: T) -> Assigned<T> {
+        Assigned(from)
+    }
+}
+
+impl<T> GenerallyAssignable<T, Option<T>> for WithDefault<Option<T>> {
+    fn assign(self, from: T) -> Assigned<Option<T>> {
+        Assigned(Some(from))
+    }
+}
+
 trait AssignedOrDefault {
     type ValueType;
     fn value_or_default(self) -> Self::ValueType;
