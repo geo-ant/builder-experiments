@@ -4,7 +4,7 @@ use typed_builder::TypedBuilder;
 #[derive(TypedBuilder, Debug)]
 // #[derive(Debug)]
 struct Pod<'a, T> {
-    first: u32,
+    first: String,
     second: &'a T,
     #[builder(default)]
     third: f32,
@@ -76,10 +76,17 @@ impl<'a, T> PodBuilder2<'a, T, (Empty, Empty, WithDefault<f32>)> {
 
 impl<'a, T, U, V, W> PodBuilder2<'a, T, (U, V, W)>
 where
-    U: Assignable<u32>,
+    U: Assignable<String>,
 {
-    pub fn first(self, first: u32) -> PodBuilder2<'a, T, (Assigned<u32>, V, W)> {
-        let state = (self.state.0.assign(first), self.state.1, self.state.2);
+    // @note(geo) we can even define an #[into] attribute that changes the signature
+    // of the builder function here from String to impl Into<String> (also possible in general)
+    // pub fn first(self, first: String) -> PodBuilder2<'a, T, (Assigned<String>, V, W)> {
+    pub fn first(self, first: impl Into<String>) -> PodBuilder2<'a, T, (Assigned<String>, V, W)> {
+        let state = (
+            self.state.0.assign(first.into()),
+            self.state.1,
+            self.state.2,
+        );
         PodBuilder2 {
             state,
             phantom: Default::default(),
@@ -115,7 +122,7 @@ where
 
 impl<'a, T, U, V, W> PodBuilder2<'a, T, (U, V, W)>
 where
-    U: AssignedOrDefault<ValueType = u32>,
+    U: AssignedOrDefault<ValueType = String>,
     V: AssignedOrDefault<ValueType = &'a T>,
     W: AssignedOrDefault<ValueType = f32>,
 {
@@ -139,9 +146,16 @@ fn main() {
     // let pod = Pod { x: 313373, s: 1337 };
     // let pod = Pod::builder().x(1).s(2).build();
 
-    let pod = PodBuilder2::new().first(1).second(&2).build();
-    let pod = PodBuilder2::new().second(&1).first(2).build();
-    let pod = PodBuilder2::new().first(1).third(3.).second(&"hi").build();
+    let pod = PodBuilder2::new().first("adda").second(&2).build();
+    let pod = PodBuilder2::new()
+        .second(&1)
+        .first(String::from("abc"))
+        .build();
+    let pod = PodBuilder2::new()
+        .first("123")
+        .third(3.)
+        .second(&"hi")
+        .build();
 
     // println!("{:?}", pod);
 }
