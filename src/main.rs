@@ -148,6 +148,7 @@ fn main() {
 
     let pod = PodBuilder2::new().first(1).second(&2).build();
     let pod = PodBuilder2::new().second(&1).first(2).build();
+    let pod = PodBuilder2::new().first(1).third(3.).second(&"hi").build();
 
     // println!("{:?}", pod);
 }
