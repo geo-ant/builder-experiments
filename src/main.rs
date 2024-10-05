@@ -16,29 +16,29 @@ pub struct Empty<T>(PhantomData<T>);
 
 pub struct WithDefault<T>(T);
 
-trait GenerallyAssignable<Origin, Inner> {
-    fn assign(self, from: Origin) -> Assigned<Inner>;
+trait Assignable<From, To> {
+    fn assign(self, from: From) -> Assigned<To>;
 }
 
-impl<T> GenerallyAssignable<T, T> for Empty<T> {
+impl<T> Assignable<T, T> for Empty<T> {
     fn assign(self, from: T) -> Assigned<T> {
         Assigned(from)
     }
 }
 
-impl<T> GenerallyAssignable<T, Option<T>> for Empty<Option<T>> {
+impl<T> Assignable<T, Option<T>> for Empty<Option<T>> {
     fn assign(self, from: T) -> Assigned<Option<T>> {
         Assigned(Some(from))
     }
 }
 
-impl<T> GenerallyAssignable<T, T> for WithDefault<T> {
+impl<T> Assignable<T, T> for WithDefault<T> {
     fn assign(self, from: T) -> Assigned<T> {
         Assigned(from)
     }
 }
 
-impl<T> GenerallyAssignable<T, Option<T>> for WithDefault<Option<T>> {
+impl<T> Assignable<T, Option<T>> for WithDefault<Option<T>> {
     fn assign(self, from: T) -> Assigned<Option<T>> {
         Assigned(Some(from))
     }
@@ -47,25 +47,6 @@ impl<T> GenerallyAssignable<T, Option<T>> for WithDefault<Option<T>> {
 trait AssignedOrDefault {
     type ValueType;
     fn value_or_default(self) -> Self::ValueType;
-}
-
-trait Assignable {
-    type ValueType;
-    fn assign(self, t: Self::ValueType) -> Assigned<Self::ValueType>;
-}
-
-impl<T> Assignable for Empty<T> {
-    type ValueType = T;
-    fn assign(self, t: T) -> Assigned<T> {
-        Assigned(t)
-    }
-}
-
-impl<T> Assignable for WithDefault<T> {
-    type ValueType = T;
-    fn assign(self, t: T) -> Assigned<T> {
-        Assigned(t)
-    }
 }
 
 impl<T> AssignedOrDefault for Assigned<T> {
@@ -114,7 +95,7 @@ impl<'a, T> PodBuilder2<'a, T, (Empty<u32>, Empty<&'a T>, WithDefault<Option<f32
 impl<'a, T, U, V, W> PodBuilder2<'a, T, (U, V, W)> {
     pub fn first<Origin>(self, first: Origin) -> PodBuilder2<'a, T, (Assigned<u32>, V, W)>
     where
-        U: GenerallyAssignable<Origin, u32>,
+        U: Assignable<Origin, u32>,
     {
         let state = (self.state.0.assign(first), self.state.1, self.state.2);
         PodBuilder2 {
@@ -127,7 +108,7 @@ impl<'a, T, U, V, W> PodBuilder2<'a, T, (U, V, W)> {
 impl<'a, T, U, V, W> PodBuilder2<'a, T, (U, V, W)> {
     pub fn second<Origin>(self, second: Origin) -> PodBuilder2<'a, T, (U, Assigned<&'a T>, W)>
     where
-        V: GenerallyAssignable<Origin, &'a T>,
+        V: Assignable<Origin, &'a T>,
     {
         let state = (self.state.0, self.state.1.assign(second), self.state.2);
         PodBuilder2 {
@@ -140,7 +121,7 @@ impl<'a, T, U, V, W> PodBuilder2<'a, T, (U, V, W)> {
 impl<'a, T, U, V, W> PodBuilder2<'a, T, (U, V, W)> {
     pub fn third<Origin>(self, third: Origin) -> PodBuilder2<'a, T, (U, V, Assigned<Option<f32>>)>
     where
-        W: GenerallyAssignable<Origin, Option<f32>>,
+        W: Assignable<Origin, Option<f32>>,
     {
         let state = (self.state.0, self.state.1, self.state.2.assign(third));
         PodBuilder2 {
