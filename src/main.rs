@@ -1,13 +1,13 @@
 use bon::Builder as BonBuilder;
 use buildstructor::Builder as Buildstructor;
 use derive_builder::Builder as DeriveBuilder;
-use std::{marker::PhantomData, str::FromStr};
+use std::{fmt::Debug, marker::PhantomData, str::FromStr};
 use typed_builder::TypedBuilder;
 
 #[derive(Debug, BonBuilder)]
 // #[derive(TypedBuilder)] // either this or bon
 // #[derive(Debug)]
-struct Pod<'a, S, T>
+struct Pod<'a, S, T: ?Sized>
 where
     S: std::fmt::Display,
     T: std::fmt::Debug + MyTrait,
@@ -16,6 +16,8 @@ where
     second: &'a T,
     #[builder(default)]
     third: f32,
+    // this depends on the type of field second nontrivially
+    forth: T::AssocType,
 }
 
 /// dummy trait for enforcing more complicated relationships
@@ -31,11 +33,11 @@ impl MyTrait for i32 {
     type AssocType = f32;
 }
 
-impl MyTrait for &str {
+impl MyTrait for str {
     type AssocType = usize;
 }
 
-pub struct Assigned<T>(T);
+pub struct Assigned<T: ?Sized>(T);
 #[derive(Default)]
 //@note this could be the unit type directly
 pub struct Empty;
@@ -44,6 +46,12 @@ pub struct Empty;
 // generic arguments bit by bit.
 //@note this could be phantom data directly
 pub struct Placeholder<T>(PhantomData<T>);
+
+impl<T> Default for Placeholder<T> {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
 
 impl<T> Assignable<T> for Placeholder<T> {
     fn assign(self, t: T) -> Assigned<T> {
@@ -54,7 +62,7 @@ impl<T> Assignable<T> for Placeholder<T> {
 pub struct WithDefault<T>(T);
 
 trait AssignedOrDefault {
-    type ValueType;
+    type ValueType: ?Sized;
     fn value_or_default(self) -> Self::ValueType;
 }
 
@@ -94,7 +102,7 @@ struct PodBuilder2<State> {
     state: State,
 }
 
-impl PodBuilder2<(Empty, Empty, WithDefault<f32>)> {
+impl PodBuilder2<(Empty, Empty, WithDefault<f32>, Empty)> {
     pub fn new() -> Self {
         Self {
             state: (
@@ -104,46 +112,104 @@ impl PodBuilder2<(Empty, Empty, WithDefault<f32>)> {
                 // but that's no problem :)
                 //
                 WithDefault(Default::default()),
+                Empty::default(),
             ),
         }
     }
 }
 
-impl<U, V, W> PodBuilder2<(U, V, W)> {
+impl<U, V, W, X> PodBuilder2<(U, V, W, X)> {
     // @note(geo) we can even define an #[into] attribute that changes the signature
     // of the builder function here from String to impl Into<String> (also possible in general)
     // pub fn first(self, first: String) -> PodBuilder2<'a, T, (Assigned<String>, V, W)> {
-    pub fn first<S: std::fmt::Display>(self, first: S) -> PodBuilder2<(Assigned<S>, V, W)>
+    pub fn first<S: std::fmt::Display>(self, first: S) -> PodBuilder2<(Assigned<S>, V, W, X)>
     where
         U: Assignable<S>,
     {
-        let state = (self.state.0.assign(first), self.state.1, self.state.2);
+        let state = (
+            self.state.0.assign(first),
+            self.state.1,
+            self.state.2,
+            self.state.3,
+        );
         PodBuilder2 { state }
     }
 
-    pub fn second<'a, T>(self, second: &'a T) -> PodBuilder2<(U, Assigned<&'a T>, W)>
+    pub fn second<'a, T>(self, second: &'a T) -> PodBuilder2<(U, Assigned<&'a T>, W, X)>
     where
         V: Assignable<&'a T>,
-        T: std::fmt::Debug + MyTrait,
+        T: std::fmt::Debug + MyTrait + ?Sized,
     {
-        let state = (self.state.0, self.state.1.assign(second), self.state.2);
+        let state = (
+            self.state.0,
+            self.state.1.assign(second),
+            self.state.2,
+            self.state.3,
+        );
         PodBuilder2 { state }
     }
-    pub fn third(self, third: f32) -> PodBuilder2<(U, V, Assigned<f32>)>
+    pub fn third(self, third: f32) -> PodBuilder2<(U, V, Assigned<f32>, X)>
     where
         W: Assignable<f32>,
     {
-        let state = (self.state.0, self.state.1, self.state.2.assign(third));
+        let state = (
+            self.state.0,
+            self.state.1,
+            self.state.2.assign(third),
+            self.state.3,
+        );
+        PodBuilder2 { state }
+    }
+}
+//@note(geo) this is conceivable, but not really useful. We should enforce a build
+// order in these cases, where the generics that this guy depends on have already
+// been set.
+// // for types that have complex dependencies on the other types we have to
+// // make up two impl blocks. One in case the type that they are dependent on was
+// // already assigned and one where it was not
+// impl<V, W, X> PodBuilder2<(Empty, V, W, X)> {
+//     pub fn forth<'a, T: MyTrait + Debug>(
+//         self,
+//         forth: T::AssocType,
+//     ) -> PodBuilder2<(Placeholder<&'a T>, V, W, Assigned<T::AssocType>)>
+//     where
+//         X: Assignable<T::AssocType>,
+//     {
+//         let state = (
+//             Placeholder::default(),
+//             self.state.1,
+//             self.state.2,
+//             self.state.3.assign(forth),
+//         );
+//         PodBuilder2 { state }
+//     }
+// }
+
+impl<'a, T: ?Sized + std::fmt::Debug + MyTrait, U, W, X> PodBuilder2<(U, Assigned<&'a T>, W, X)> {
+    pub fn forth(
+        self,
+        forth: T::AssocType,
+    ) -> PodBuilder2<(U, Assigned<&'a T>, W, Assigned<T::AssocType>)>
+    where
+        X: Assignable<T::AssocType>,
+    {
+        let state = (
+            self.state.0,
+            self.state.1,
+            self.state.2,
+            self.state.3.assign(forth),
+        );
         PodBuilder2 { state }
     }
 }
 
-impl<'a, S, T, U, V, W> PodBuilder2<(U, V, W)>
+impl<'a, S, T, U, V, W, X> PodBuilder2<(U, V, W, X)>
 where
     U: AssignedOrDefault<ValueType = S>,
     V: AssignedOrDefault<ValueType = &'a T>,
     W: AssignedOrDefault<ValueType = f32>,
-    T: std::fmt::Debug + 'a + MyTrait,
+    X: AssignedOrDefault<ValueType = T::AssocType>,
+    T: std::fmt::Debug + 'a + MyTrait + ?Sized,
     S: std::fmt::Display,
 {
     pub fn build(self) -> Pod<'a, S, T> {
@@ -151,6 +217,7 @@ where
             first: self.state.0.value_or_default(),
             second: self.state.1.value_or_default(),
             third: self.state.2.value_or_default(),
+            forth: self.state.3.value_or_default(),
         }
     }
 }
@@ -166,25 +233,26 @@ fn main() {
     // let pod = Pod { x: 313373, s: 1337 };
     // let pod = Pod::builder().x(1).s(2).build();
 
-    let pod = PodBuilder2::new().first("adda").second(&2.).build();
-    let pod = PodBuilder2::new()
-        .second(&1)
-        .first(String::from("abc"))
-        .build();
-    let pod = PodBuilder2::new()
-        .first("123")
-        .third(3.)
-        .second(&"hi")
-        .build();
+    // let pod = PodBuilder2::new().first("adda").second(&2.).build();
+    // let pod = PodBuilder2::new()
+    //     .second(&1)
+    //     .first(String::from("abc"))
+    //     .build();
+    // let pod = PodBuilder2::new()
+    //     .first("123")
+    //     .third(3.)
+    //     .second(&"hi")
+    //     .build();
 
-    let stemcell = PodBuilder2::new().first("hi");
+    let stemcell = PodBuilder2::new().first("hi").third(1337.);
 
     let arg_count = std::env::args().count();
 
     if arg_count > 3 {
-        let pod = stemcell.second(&1).build();
+        let pod = stemcell.second(&1i32).forth(1f32); //.build(); //.build(); //.build();:
     } else {
-        let pod = stemcell.second(&"hi").build();
+        let pod = stemcell.second("string").forth(1).build();
+        // let pod = stemcell.second(&"hi").build();
     }
 
     // @note this code does not work for typed-builder
