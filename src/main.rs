@@ -12,7 +12,19 @@ struct Pod<'a, T> {
 
 pub struct Assigned<T>(T);
 #[derive(Default)]
-pub struct Empty {}
+//@note this could be the unit type directly
+pub struct Empty;
+
+// this might not look necessary at first but it allows us to introduce the
+// generic arguments bit by bit.
+//@note this could be phantom data directly
+pub struct Placeholder<T>(PhantomData<T>);
+
+impl<T> Assignable<T> for Placeholder<T> {
+    fn assign(self, t: T) -> Assigned<T> {
+        Assigned(t)
+    }
+}
 
 pub struct WithDefault<T>(T);
 
