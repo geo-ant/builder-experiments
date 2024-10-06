@@ -5,8 +5,8 @@ use typed_builder::TypedBuilder;
 #[derive(Debug, BonBuilder)]
 // #[derive(TypedBuilder)] // either this or bon
 // #[derive(Debug)]
-struct Pod<'a, T: std::fmt::Debug> {
-    first: String,
+struct Pod<'a, S: std::fmt::Display, T: std::fmt::Debug> {
+    first: S,
     second: &'a T,
     #[builder(default)]
     third: f32,
@@ -90,15 +90,11 @@ impl<U, V, W> PodBuilder2<(U, V, W)> {
     // @note(geo) we can even define an #[into] attribute that changes the signature
     // of the builder function here from String to impl Into<String> (also possible in general)
     // pub fn first(self, first: String) -> PodBuilder2<'a, T, (Assigned<String>, V, W)> {
-    pub fn first(self, first: impl Into<String>) -> PodBuilder2<(Assigned<String>, V, W)>
+    pub fn first<S: std::fmt::Display>(self, first: S) -> PodBuilder2<(Assigned<S>, V, W)>
     where
-        U: Assignable<String>,
+        U: Assignable<S>,
     {
-        let state = (
-            self.state.0.assign(first.into()),
-            self.state.1,
-            self.state.2,
-        );
+        let state = (self.state.0.assign(first), self.state.1, self.state.2);
         PodBuilder2 { state }
     }
 
@@ -119,14 +115,15 @@ impl<U, V, W> PodBuilder2<(U, V, W)> {
     }
 }
 
-impl<'a, T, U, V, W> PodBuilder2<(U, V, W)>
+impl<'a, S, T, U, V, W> PodBuilder2<(U, V, W)>
 where
-    U: AssignedOrDefault<ValueType = String>,
+    U: AssignedOrDefault<ValueType = S>,
     V: AssignedOrDefault<ValueType = &'a T>,
     W: AssignedOrDefault<ValueType = f32>,
     T: std::fmt::Debug + 'a,
+    S: std::fmt::Display,
 {
-    pub fn build(self) -> Pod<'a, T> {
+    pub fn build(self) -> Pod<'a, S, T> {
         Pod {
             first: self.state.0.value_or_default(),
             second: self.state.1.value_or_default(),
@@ -157,7 +154,7 @@ fn main() {
         .second(&"hi")
         .build();
 
-    let stemcell = PodBuilder2::new().first("hello");
+    let stemcell = PodBuilder2::new().first("hi");
 
     let some_count = std::env::args().count();
 
