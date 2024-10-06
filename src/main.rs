@@ -1,15 +1,25 @@
 use bon::Builder as BonBuilder;
+use buildstructor::Builder as Buildstructor;
+use derive_builder::Builder as DeriveBuilder;
 use std::{marker::PhantomData, str::FromStr};
 use typed_builder::TypedBuilder;
 
 #[derive(Debug, BonBuilder)]
 // #[derive(TypedBuilder)] // either this or bon
 // #[derive(Debug)]
-struct Pod<'a, S: std::fmt::Display, T: std::fmt::Debug> {
+struct Pod<'a, S, T>
+where
+    S: std::fmt::Display,
+    T: std::fmt::Debug,
+{
     first: S,
     second: &'a T,
     #[builder(default)]
     third: f32,
+}
+
+trait MyTrait {
+    type AssocType: Clone;
 }
 
 pub struct Assigned<T>(T);
@@ -156,9 +166,9 @@ fn main() {
 
     let stemcell = PodBuilder2::new().first("hi");
 
-    let some_count = std::env::args().count();
+    let arg_count = std::env::args().count();
 
-    if some_count > 2 {
+    if arg_count > 3 {
         let pod = stemcell.second(&1).build();
     } else {
         let pod = stemcell.second(&"hi").build();

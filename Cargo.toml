@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 typed-builder = "0.20"
 bon = "2.3"
+buildstructor = "0.5"
+derive_builder = "0.20"
