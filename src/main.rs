@@ -1,7 +1,9 @@
+use bon::Builder as BonBuilder;
 use std::{marker::PhantomData, str::FromStr};
 use typed_builder::TypedBuilder;
 
-#[derive(TypedBuilder, Debug)]
+#[derive(Debug, BonBuilder)]
+// #[derive(TypedBuilder)] // either this or bon
 // #[derive(Debug)]
 struct Pod<'a, T: std::fmt::Debug> {
     first: String,
@@ -158,6 +160,15 @@ fn main() {
     let stemcell = PodBuilder2::new().first("hello").third(1337.);
 
     let some_count = std::env::args().count();
+
+    if some_count > 2 {
+        let pod = stemcell.second(&1).build();
+    } else {
+        let pod = stemcell.second(&"hi").build();
+    }
+
+    // @note this code does not work for typed-builder
+    let stemcell = Pod::builder().first("hello".into()).third(1337.);
 
     if some_count > 2 {
         let pod = stemcell.second(&1).build();
