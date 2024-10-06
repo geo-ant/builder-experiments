@@ -10,7 +10,7 @@ use typed_builder::TypedBuilder;
 struct Pod<'a, S, T>
 where
     S: std::fmt::Display,
-    T: std::fmt::Debug,
+    T: std::fmt::Debug + MyTrait,
 {
     first: S,
     second: &'a T,
@@ -18,8 +18,21 @@ where
     third: f32,
 }
 
+/// dummy trait for enforcing more complicated relationships
 trait MyTrait {
     type AssocType: Clone;
+}
+
+impl MyTrait for f32 {
+    type AssocType = i32;
+}
+
+impl MyTrait for i32 {
+    type AssocType = f32;
+}
+
+impl MyTrait for &str {
+    type AssocType = usize;
 }
 
 pub struct Assigned<T>(T);
@@ -111,7 +124,7 @@ impl<U, V, W> PodBuilder2<(U, V, W)> {
     pub fn second<'a, T>(self, second: &'a T) -> PodBuilder2<(U, Assigned<&'a T>, W)>
     where
         V: Assignable<&'a T>,
-        T: std::fmt::Debug,
+        T: std::fmt::Debug + MyTrait,
     {
         let state = (self.state.0, self.state.1.assign(second), self.state.2);
         PodBuilder2 { state }
@@ -130,7 +143,7 @@ where
     U: AssignedOrDefault<ValueType = S>,
     V: AssignedOrDefault<ValueType = &'a T>,
     W: AssignedOrDefault<ValueType = f32>,
-    T: std::fmt::Debug + 'a,
+    T: std::fmt::Debug + 'a + MyTrait,
     S: std::fmt::Display,
 {
     pub fn build(self) -> Pod<'a, S, T> {
