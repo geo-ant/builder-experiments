@@ -5,11 +5,11 @@ use typed_builder::TypedBuilder;
 #[derive(Debug, BonBuilder)]
 // #[derive(TypedBuilder)] // either this or bon
 // #[derive(Debug)]
-struct Pod<'a, T: std::fmt::Debug> {
+struct Pod<'a, T: std::fmt::Debug, U: Clone + Default> {
     first: String,
     second: &'a T,
     #[builder(default)]
-    third: f32,
+    third: U,
 }
 
 pub struct Assigned<T>(T);
@@ -110,23 +110,24 @@ impl<U, V, W> PodBuilder2<(U, V, W)> {
         let state = (self.state.0, self.state.1.assign(second), self.state.2);
         PodBuilder2 { state }
     }
-    pub fn third(self, third: f32) -> PodBuilder2<(U, V, Assigned<f32>)>
+    pub fn third<S: Clone + Default>(self, third: S) -> PodBuilder2<(U, V, Assigned<S>)>
     where
-        W: Assignable<f32>,
+        W: Assignable<S>,
     {
         let state = (self.state.0, self.state.1, self.state.2.assign(third));
         PodBuilder2 { state }
     }
 }
 
-impl<'a, T, U, V, W> PodBuilder2<(U, V, W)>
+impl<'a, S, T, U, V, W> PodBuilder2<(U, V, W)>
 where
     U: AssignedOrDefault<ValueType = String>,
     V: AssignedOrDefault<ValueType = &'a T>,
-    W: AssignedOrDefault<ValueType = f32>,
+    W: AssignedOrDefault<ValueType = S>,
     T: std::fmt::Debug + 'a,
+    S: Clone + Default,
 {
-    pub fn build(self) -> Pod<'a, T> {
+    pub fn build(self) -> Pod<'a, T, S> {
         Pod {
             first: self.state.0.value_or_default(),
             second: self.state.1.value_or_default(),
@@ -168,13 +169,13 @@ fn main() {
     }
 
     // @note this code does not work for typed-builder
-    let stemcell = Pod::builder().first("hello".into()).third(1337.);
+    // let stemcell = Pod::builder().first("hello".into()).third(1337.);
 
-    if some_count > 2 {
-        let pod = stemcell.second(&1).build();
-    } else {
-        let pod = stemcell.second(&"hi").build();
-    }
+    // if some_count > 2 {
+    //     let pod = stemcell.second(&1).build();
+    // } else {
+    //     let pod = stemcell.second(&"hi").build();
+    // }
 
     // println!("{:?}", pod);
 }
