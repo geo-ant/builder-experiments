@@ -3,7 +3,7 @@ use typed_builder::TypedBuilder;
 
 #[derive(TypedBuilder, Debug)]
 // #[derive(Debug)]
-struct Pod<'a, T> {
+struct Pod<'a, T: std::fmt::Debug> {
     first: String,
     second: &'a T,
     #[builder(default)]
@@ -65,12 +65,11 @@ impl<T> AssignedOrDefault for WithDefault<T> {
     }
 }
 
-struct PodBuilder2<'a, T, State> {
+struct PodBuilder2<State> {
     state: State,
-    phantom: PhantomData<&'a T>,
 }
 
-impl<'a, T> PodBuilder2<'a, T, (Empty, Empty, WithDefault<f32>)> {
+impl PodBuilder2<(Empty, Empty, WithDefault<f32>)> {
     pub fn new() -> Self {
         Self {
             state: (
@@ -81,62 +80,49 @@ impl<'a, T> PodBuilder2<'a, T, (Empty, Empty, WithDefault<f32>)> {
                 //
                 WithDefault(Default::default()),
             ),
-            phantom: Default::default(),
         }
     }
 }
 
-impl<'a, T, U, V, W> PodBuilder2<'a, T, (U, V, W)>
-where
-    U: Assignable<String>,
-{
+impl<U, V, W> PodBuilder2<(U, V, W)> {
     // @note(geo) we can even define an #[into] attribute that changes the signature
     // of the builder function here from String to impl Into<String> (also possible in general)
     // pub fn first(self, first: String) -> PodBuilder2<'a, T, (Assigned<String>, V, W)> {
-    pub fn first(self, first: impl Into<String>) -> PodBuilder2<'a, T, (Assigned<String>, V, W)> {
+    pub fn first(self, first: impl Into<String>) -> PodBuilder2<(Assigned<String>, V, W)>
+    where
+        U: Assignable<String>,
+    {
         let state = (
             self.state.0.assign(first.into()),
             self.state.1,
             self.state.2,
         );
-        PodBuilder2 {
-            state,
-            phantom: Default::default(),
-        }
+        PodBuilder2 { state }
     }
-}
 
-impl<'a, T, U, V, W> PodBuilder2<'a, T, (U, V, W)>
-where
-    V: Assignable<&'a T>,
-{
-    pub fn second(self, second: &'a T) -> PodBuilder2<'a, T, (U, Assigned<&'a T>, W)> {
+    pub fn second<'a, T>(self, second: &'a T) -> PodBuilder2<(U, Assigned<&'a T>, W)>
+    where
+        V: Assignable<&'a T>,
+        T: std::fmt::Debug,
+    {
         let state = (self.state.0, self.state.1.assign(second), self.state.2);
-        PodBuilder2 {
-            state,
-            phantom: Default::default(),
-        }
+        PodBuilder2 { state }
     }
-}
-
-impl<'a, T, U, V, W> PodBuilder2<'a, T, (U, V, W)>
-where
-    W: Assignable<f32>,
-{
-    pub fn third(self, third: f32) -> PodBuilder2<'a, T, (U, V, Assigned<f32>)> {
+    pub fn third(self, third: f32) -> PodBuilder2<(U, V, Assigned<f32>)>
+    where
+        W: Assignable<f32>,
+    {
         let state = (self.state.0, self.state.1, self.state.2.assign(third));
-        PodBuilder2 {
-            state,
-            phantom: Default::default(),
-        }
+        PodBuilder2 { state }
     }
 }
 
-impl<'a, T, U, V, W> PodBuilder2<'a, T, (U, V, W)>
+impl<'a, T, U, V, W> PodBuilder2<(U, V, W)>
 where
     U: AssignedOrDefault<ValueType = String>,
     V: AssignedOrDefault<ValueType = &'a T>,
     W: AssignedOrDefault<ValueType = f32>,
+    T: std::fmt::Debug + 'a,
 {
     pub fn build(self) -> Pod<'a, T> {
         Pod {
