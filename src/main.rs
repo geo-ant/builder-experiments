@@ -155,5 +155,15 @@ fn main() {
         .second(&"hi")
         .build();
 
+    let stemcell = PodBuilder2::new().first("hello").third(1337.);
+
+    let some_count = std::env::args().count();
+
+    if some_count > 2 {
+        let pod = stemcell.second(&1).build();
+    } else {
+        let pod = stemcell.second(&"hi").build();
+    }
+
     // println!("{:?}", pod);
 }
