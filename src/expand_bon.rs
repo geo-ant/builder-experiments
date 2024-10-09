@@ -1,4 +1,3 @@
-#![feature(prelude_import)]
 #[prelude_import]
 use std::prelude::rust_2021::*;
 #[macro_use]
@@ -13,11 +12,9 @@ struct Pod<'a, S: std::fmt::Display, T: std::fmt::Debug> {
     third: f32,
 }
 #[automatically_derived]
-impl<
-    'a,
-    S: ::core::fmt::Debug + std::fmt::Display,
-    T: ::core::fmt::Debug + std::fmt::Debug,
-> ::core::fmt::Debug for Pod<'a, S, T> {
+impl<'a, S: ::core::fmt::Debug + std::fmt::Display, T: ::core::fmt::Debug + std::fmt::Debug>
+    ::core::fmt::Debug for Pod<'a, S, T>
+{
     #[inline]
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         ::core::fmt::Formatter::debug_struct_field3_finish(
@@ -58,27 +55,21 @@ type __PodBuilderInitialState = (
 ///Use builder syntax to set the required parameters and finish by calling the method [`Self::build()`].
 #[allow(unused_parens)]
 #[allow(clippy::struct_field_names, clippy::type_complexity)]
-struct PodBuilder<
-    'a,
-    S: std::fmt::Display,
-    T: std::fmt::Debug,
-    ___State = __PodBuilderInitialState,
-> {
+struct PodBuilder<'a, S: std::fmt::Display, T: std::fmt::Debug, ___State = __PodBuilderInitialState>
+{
     /**Please don't touch this field. It's an implementation detail that is exempt from the API stability guarantees. This field couldn't be hidden using Rust's privacy syntax. The details about this are described in [the blog post](https://elastio.github.io/bon/blog/the-weird-of-function-local-types-in-rust).
-        */
-    __private_phantom: ::core::marker::PhantomData<
-        (
-            ::core::marker::PhantomData<Pod<'a, S, T>>,
-            ::core::marker::PhantomData<S>,
-            ::core::marker::PhantomData<&'a T>,
-            ::core::marker::PhantomData<f32>,
-            ::core::marker::PhantomData<S>,
-            ::core::marker::PhantomData<T>,
-            ::core::marker::PhantomData<___State>,
-        ),
-    >,
+     */
+    __private_phantom: ::core::marker::PhantomData<(
+        ::core::marker::PhantomData<Pod<'a, S, T>>,
+        ::core::marker::PhantomData<S>,
+        ::core::marker::PhantomData<&'a T>,
+        ::core::marker::PhantomData<f32>,
+        ::core::marker::PhantomData<S>,
+        ::core::marker::PhantomData<T>,
+        ::core::marker::PhantomData<___State>,
+    )>,
     /**Please don't touch this field. It's an implementation detail that is exempt from the API stability guarantees. This field couldn't be hidden using Rust's privacy syntax. The details about this are described in [the blog post](https://elastio.github.io/bon/blog/the-weird-of-function-local-types-in-rust).
-        */
+     */
     __private_named_members: ___State,
 }
 #[allow(non_camel_case_types)]
@@ -92,14 +83,9 @@ struct PodBuilder__second;
 struct PodBuilder__third;
 #[allow(unused_parens)]
 #[automatically_derived]
-impl<
-    'a,
-    S: std::fmt::Display,
-    T: std::fmt::Debug,
-    __First,
-    __Second,
-    __Third,
-> PodBuilder<'a, S, T, (__First, __Second, __Third)> {
+impl<'a, S: std::fmt::Display, T: std::fmt::Debug, __First, __Second, __Third>
+    PodBuilder<'a, S, T, (__First, __Second, __Third)>
+{
     ///Finishes building and returns the requested object.
     #[inline(always)]
     #[allow(clippy::inline_always, clippy::future_not_send)]
@@ -110,28 +96,26 @@ impl<
         __Second: ::bon::private::IntoSet<&'a T, PodBuilder__second>,
         __Third: ::bon::private::IntoSet<Option<f32>, PodBuilder__third>,
     {
-        let first: S = ::bon::private::IntoSet::<
-            S,
-            PodBuilder__first,
-        >::into_set(self.__private_named_members.0);
-        let second: &'a T = ::bon::private::IntoSet::<
-            &'a T,
-            PodBuilder__second,
-        >::into_set(self.__private_named_members.1);
-        let third: f32 = ::bon::private::IntoSet::<
-            Option<f32>,
-            PodBuilder__third,
-        >::into_set(self.__private_named_members.2)
-            .unwrap_or_default();
-        Pod { first, second, third }
+        let first: S = ::bon::private::IntoSet::<S, PodBuilder__first>::into_set(
+            self.__private_named_members.0,
+        );
+        let second: &'a T = ::bon::private::IntoSet::<&'a T, PodBuilder__second>::into_set(
+            self.__private_named_members.1,
+        );
+        let third: f32 = ::bon::private::IntoSet::<Option<f32>, PodBuilder__third>::into_set(
+            self.__private_named_members.2,
+        )
+        .unwrap_or_default();
+        Pod {
+            first,
+            second,
+            third,
+        }
     }
     ///Sets the value of `first`. See [`Pod::builder()`] for more info.
     #[allow(clippy::inline_always, clippy::impl_trait_in_params)]
     #[inline(always)]
-    fn first(
-        self,
-        value: S,
-    ) -> PodBuilder<'a, S, T, (::bon::private::Set<S>, __Second, __Third)>
+    fn first(self, value: S) -> PodBuilder<'a, S, T, (::bon::private::Set<S>, __Second, __Third)>
     where
         __First: ::bon::private::IsUnset,
     {
@@ -246,15 +230,16 @@ struct PodBuilder2<State> {
 impl PodBuilder2<(Empty, Empty, WithDefault<f32>)> {
     pub fn new() -> Self {
         Self {
-            state: (Empty::default(), Empty::default(), WithDefault(Default::default())),
+            state: (
+                Empty::default(),
+                Empty::default(),
+                WithDefault(Default::default()),
+            ),
         }
     }
 }
 impl<U, V, W> PodBuilder2<(U, V, W)> {
-    pub fn first<S: std::fmt::Display>(
-        self,
-        first: S,
-    ) -> PodBuilder2<(Assigned<S>, V, W)>
+    pub fn first<S: std::fmt::Display>(self, first: S) -> PodBuilder2<(Assigned<S>, V, W)>
     where
         U: Assignable<S>,
     {
@@ -295,8 +280,15 @@ where
 }
 fn main() {
     let pod = PodBuilder2::new().first("adda").second(&2.).build();
-    let pod = PodBuilder2::new().second(&1).first(String::from("abc")).build();
-    let pod = PodBuilder2::new().first("123").third(3.).second(&"hi").build();
+    let pod = PodBuilder2::new()
+        .second(&1)
+        .first(String::from("abc"))
+        .build();
+    let pod = PodBuilder2::new()
+        .first("123")
+        .third(3.)
+        .second(&"hi")
+        .build();
     let stemcell = PodBuilder2::new().first("hi");
     let some_count = std::env::args().count();
     if some_count > 2 {
