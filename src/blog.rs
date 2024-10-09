@@ -97,7 +97,7 @@ impl<F1, F2, F3, F4, F5> Pod2Builder<F1, F2, F3, F4, F5> {
 
     fn build<'a, S, T>(self) -> Pod2<'a, S, T>
     where
-        T: 'a + Debug + MyTrait,
+        T: Debug + MyTrait,
         S: std::fmt::Display,
         F1: HasValue<ValueType = f32>,
         F2: HasValue<ValueType = S>,
@@ -119,7 +119,7 @@ impl<F1, F2, F3, F4, F5> Pod2Builder<F1, F2, F3, F4, F5> {
 impl<F1, F2, F4> Pod2Builder<F1, F2, Empty, F4, Empty> {
     fn field3<'a, T>(self, field3: &'a T) -> Pod2Builder<F1, F2, Assigned<&'a T>, F4, Empty>
     where
-        T: 'a + Debug + MyTrait,
+        T: Debug + MyTrait,
     {
         Pod2Builder {
             field1: self.field1,
@@ -134,7 +134,7 @@ impl<F1, F2, F4> Pod2Builder<F1, F2, Empty, F4, Empty> {
 /// Assigning field 3: if field 5 is set.
 impl<'a, F1, F2, F4, T> Pod2Builder<F1, F2, Empty, F4, Assigned<Option<T>>>
 where
-    T: 'a + Debug + MyTrait,
+    T: Debug + MyTrait,
 {
     fn field3(
         self,
@@ -153,7 +153,7 @@ where
 /// assigning field 5 if field 3 is set
 impl<'a, T, F1, F2, F4> Pod2Builder<F1, F2, Assigned<&'a T>, F4, Empty>
 where
-    T: 'a + Debug + MyTrait,
+    T: Debug + MyTrait,
 {
     fn field5(
         self,
@@ -193,7 +193,7 @@ impl<F1, F2, F4> Pod2Builder<F1, F2, Empty, F4, Empty> {
 // run into duplicate implementations.
 impl<'a, T, F1, F2, F5> Pod2Builder<F1, F2, Assigned<&'a T>, Empty, F5>
 where
-    T: 'a + Debug + MyTrait,
+    T: Debug + MyTrait,
 {
     fn field4(
         self,
@@ -212,7 +212,7 @@ where
 // assigning field 4, if field 3 is not set but field 5 is.
 impl<'a, T, F1, F2> Pod2Builder<F1, F2, Empty, Empty, Assigned<Option<T>>>
 where
-    T: 'a + Debug + MyTrait,
+    T: Debug + MyTrait,
 {
     fn field4(
         self,
@@ -244,6 +244,13 @@ impl MyTrait for String {
 
 fn foo(cond: bool) {
     let builder = Pod2Builder::new().field1(1.);
+    let pod = Pod2Builder::new()
+        .field2(1f64)
+        .field1(337.)
+        .field3(&String::new())
+        .field5(Some("hi".into()))
+        .field4(1)
+        .build();
     if cond {
         let builder = builder.field3(&1i32).field2("foo");
     } else {
