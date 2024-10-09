@@ -5,7 +5,7 @@ use std::{
     marker::PhantomData,
 };
 
-struct Pod2<'a, S, T>
+struct Pod<'a, S, T>
 where
     S: Display,
     T: Debug + MyTrait,
@@ -24,7 +24,7 @@ trait MyTrait {
     type AssocType;
 }
 
-struct Pod2Builder<F1, F2, F3, F4, F5> {
+struct PodBuilder<F1, F2, F3, F4, F5> {
     field1: F1,
     field2: F2,
     field3: F3,
@@ -55,7 +55,7 @@ impl<T> HasValue for Assigned<T> {
     }
 }
 
-impl Pod2Builder<Empty, Empty, Empty, Empty, Empty> {
+impl PodBuilder<Empty, Empty, Empty, Empty, Empty> {
     pub fn new() -> Self {
         Self {
             field1: Default::default(),
@@ -67,12 +67,12 @@ impl Pod2Builder<Empty, Empty, Empty, Empty, Empty> {
     }
 }
 
-impl<F1, F2, F3, F4, F5> Pod2Builder<F1, F2, F3, F4, F5> {
-    fn field1(self, field1: f32) -> Pod2Builder<Assigned<f32>, F2, F3, F4, F5>
+impl<F1, F2, F3, F4, F5> PodBuilder<F1, F2, F3, F4, F5> {
+    fn field1(self, field1: f32) -> PodBuilder<Assigned<f32>, F2, F3, F4, F5>
     where
         F1: Assignable<f32>,
     {
-        Pod2Builder {
+        PodBuilder {
             field1: Assigned(field1),
             field2: self.field2,
             field3: self.field3,
@@ -81,12 +81,12 @@ impl<F1, F2, F3, F4, F5> Pod2Builder<F1, F2, F3, F4, F5> {
         }
     }
 
-    fn field2<S>(self, field2: S) -> Pod2Builder<F1, Assigned<S>, F3, F4, F5>
+    fn field2<S>(self, field2: S) -> PodBuilder<F1, Assigned<S>, F3, F4, F5>
     where
         S: Display,
         F2: Assignable<S>,
     {
-        Pod2Builder {
+        PodBuilder {
             field1: self.field1,
             field2: Assigned(field2),
             field3: self.field3,
@@ -95,7 +95,7 @@ impl<F1, F2, F3, F4, F5> Pod2Builder<F1, F2, F3, F4, F5> {
         }
     }
 
-    fn build<'a, S, T>(self) -> Pod2<'a, S, T>
+    fn build<'a, S, T>(self) -> Pod<'a, S, T>
     where
         T: Debug + MyTrait,
         S: std::fmt::Display,
@@ -105,7 +105,7 @@ impl<F1, F2, F3, F4, F5> Pod2Builder<F1, F2, F3, F4, F5> {
         F4: HasValue<ValueType = T::AssocType>,
         F5: HasValue<ValueType = Option<T>>,
     {
-        Pod2 {
+        Pod {
             field1: self.field1.value(),
             field2: self.field2.value(),
             field3: self.field3.value(),
@@ -116,12 +116,12 @@ impl<F1, F2, F3, F4, F5> Pod2Builder<F1, F2, F3, F4, F5> {
 }
 
 /// Assigning field 3: if field 5 is not set
-impl<F1, F2, F4> Pod2Builder<F1, F2, Empty, F4, Empty> {
-    fn field3<'a, T>(self, field3: &'a T) -> Pod2Builder<F1, F2, Assigned<&'a T>, F4, Empty>
+impl<F1, F2, F4> PodBuilder<F1, F2, Empty, F4, Empty> {
+    fn field3<'a, T>(self, field3: &'a T) -> PodBuilder<F1, F2, Assigned<&'a T>, F4, Empty>
     where
         T: Debug + MyTrait,
     {
-        Pod2Builder {
+        PodBuilder {
             field1: self.field1,
             field2: self.field2,
             field3: Assigned(field3),
@@ -132,15 +132,12 @@ impl<F1, F2, F4> Pod2Builder<F1, F2, Empty, F4, Empty> {
 }
 
 /// Assigning field 3: if field 5 is set.
-impl<'a, F1, F2, F4, T> Pod2Builder<F1, F2, Empty, F4, Assigned<Option<T>>>
+impl<'a, F1, F2, F4, T> PodBuilder<F1, F2, Empty, F4, Assigned<Option<T>>>
 where
     T: Debug + MyTrait,
 {
-    fn field3(
-        self,
-        field3: &'a T,
-    ) -> Pod2Builder<F1, F2, Assigned<&'a T>, F4, Assigned<Option<T>>> {
-        Pod2Builder {
+    fn field3(self, field3: &'a T) -> PodBuilder<F1, F2, Assigned<&'a T>, F4, Assigned<Option<T>>> {
+        PodBuilder {
             field1: self.field1,
             field2: self.field2,
             field3: Assigned(field3),
@@ -151,15 +148,15 @@ where
 }
 
 /// assigning field 5 if field 3 is set
-impl<'a, T, F1, F2, F4> Pod2Builder<F1, F2, Assigned<&'a T>, F4, Empty>
+impl<'a, T, F1, F2, F4> PodBuilder<F1, F2, Assigned<&'a T>, F4, Empty>
 where
     T: Debug + MyTrait,
 {
     fn field5(
         self,
         field5: Option<T>,
-    ) -> Pod2Builder<F1, F2, Assigned<&'a T>, F4, Assigned<Option<T>>> {
-        Pod2Builder {
+    ) -> PodBuilder<F1, F2, Assigned<&'a T>, F4, Assigned<Option<T>>> {
+        PodBuilder {
             field1: self.field1,
             field2: self.field2,
             field3: self.field3,
@@ -170,12 +167,12 @@ where
 }
 
 /// assigning field 5 if field 3 is not set
-impl<F1, F2, F4> Pod2Builder<F1, F2, Empty, F4, Empty> {
-    fn field5<T>(self, field5: Option<T>) -> Pod2Builder<F1, F2, Empty, F4, Assigned<Option<T>>>
+impl<F1, F2, F4> PodBuilder<F1, F2, Empty, F4, Empty> {
+    fn field5<T>(self, field5: Option<T>) -> PodBuilder<F1, F2, Empty, F4, Assigned<Option<T>>>
     where
         T: Debug + MyTrait,
     {
-        Pod2Builder {
+        PodBuilder {
             field1: self.field1,
             field2: self.field2,
             field3: Empty,
@@ -191,15 +188,15 @@ impl<F1, F2, F4> Pod2Builder<F1, F2, Empty, F4, Empty> {
 // @note(geo) although unintuitive it might be better in more complicated cases
 // to explicitly work through all possible combinatorial combinations to not
 // run into duplicate implementations.
-impl<'a, T, F1, F2, F5> Pod2Builder<F1, F2, Assigned<&'a T>, Empty, F5>
+impl<'a, T, F1, F2, F5> PodBuilder<F1, F2, Assigned<&'a T>, Empty, F5>
 where
     T: Debug + MyTrait,
 {
     fn field4(
         self,
         field4: T::AssocType,
-    ) -> Pod2Builder<F1, F2, Assigned<&'a T>, Assigned<T::AssocType>, F5> {
-        Pod2Builder {
+    ) -> PodBuilder<F1, F2, Assigned<&'a T>, Assigned<T::AssocType>, F5> {
+        PodBuilder {
             field1: self.field1,
             field2: self.field2,
             field3: self.field3,
@@ -210,15 +207,15 @@ where
 }
 
 // assigning field 4, if field 3 is not set but field 5 is.
-impl<'a, T, F1, F2> Pod2Builder<F1, F2, Empty, Empty, Assigned<Option<T>>>
+impl<'a, T, F1, F2> PodBuilder<F1, F2, Empty, Empty, Assigned<Option<T>>>
 where
     T: Debug + MyTrait,
 {
     fn field4(
         self,
         field4: T::AssocType,
-    ) -> Pod2Builder<F1, F2, Empty, Assigned<T::AssocType>, Assigned<Option<T>>> {
-        Pod2Builder {
+    ) -> PodBuilder<F1, F2, Empty, Assigned<T::AssocType>, Assigned<Option<T>>> {
+        PodBuilder {
             field1: self.field1,
             field2: self.field2,
             field3: Empty,
@@ -243,8 +240,9 @@ impl MyTrait for String {
 }
 
 fn foo(cond: bool) {
-    let builder = Pod2Builder::new().field1(1.);
-    let pod = Pod2Builder::new()
+    let s = String::new();
+    let builder = PodBuilder::new().field1(1.).field3(&s);
+    let pod = PodBuilder::new()
         .field2(1f64)
         .field1(337.)
         .field3(&String::new())
@@ -252,8 +250,12 @@ fn foo(cond: bool) {
         .field4(1)
         .build();
     if cond {
-        let builder = builder.field3(&1i32).field2("foo");
+        let builder = builder.field2("foo").field4(1).field5(None).build();
     } else {
-        let builder = builder.field2(1).field3(&String::from("hi"));
+        let builder = builder
+            .field4(2)
+            .field2(1)
+            .field5(Some("hi".into()))
+            .build();
     }
 }
