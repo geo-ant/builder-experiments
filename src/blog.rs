@@ -95,6 +95,34 @@ impl<F1, F2, F3, F4, F5> PodBuilder<F1, F2, F3, F4, F5> {
         }
     }
 
+    fn field3<'a, T>(self, field3: &'a T) -> PodBuilder<F1, F2, Assigned<&'a T>, F4, F5>
+    where
+        T: Debug + MyTrait,
+        F3: Assignable<&'a T>,
+    {
+        PodBuilder {
+            field1: self.field1,
+            field2: self.field2,
+            field3: Assigned(field3),
+            field4: self.field4,
+            field5: self.field5,
+        }
+    }
+
+    fn field5<T>(self, field5: Option<T>) -> PodBuilder<F1, F2, F3, F4, Assigned<Option<T>>>
+    where
+        T: Debug + MyTrait,
+        F5: Assignable<Option<T>>,
+    {
+        PodBuilder {
+            field1: self.field1,
+            field2: self.field2,
+            field3: self.field3,
+            field4: self.field4,
+            field5: Assigned(field5),
+        }
+    }
+
     fn build<'a, S, T>(self) -> Pod<'a, S, T>
     where
         T: Debug + MyTrait,
@@ -111,73 +139,6 @@ impl<F1, F2, F3, F4, F5> PodBuilder<F1, F2, F3, F4, F5> {
             field3: self.field3.value(),
             field4: self.field4.value(),
             field5: self.field5.value(),
-        }
-    }
-}
-
-/// Assigning field 3: if field 5 is not set
-impl<F1, F2, F4> PodBuilder<F1, F2, Empty, F4, Empty> {
-    fn field3<'a, T>(self, field3: &'a T) -> PodBuilder<F1, F2, Assigned<&'a T>, F4, Empty>
-    where
-        T: Debug + MyTrait,
-    {
-        PodBuilder {
-            field1: self.field1,
-            field2: self.field2,
-            field3: Assigned(field3),
-            field4: self.field4,
-            field5: self.field5,
-        }
-    }
-}
-
-/// Assigning field 3: if field 5 is set.
-impl<'a, F1, F2, F4, T> PodBuilder<F1, F2, Empty, F4, Assigned<Option<T>>>
-where
-    T: Debug + MyTrait,
-{
-    fn field3(self, field3: &'a T) -> PodBuilder<F1, F2, Assigned<&'a T>, F4, Assigned<Option<T>>> {
-        PodBuilder {
-            field1: self.field1,
-            field2: self.field2,
-            field3: Assigned(field3),
-            field4: self.field4,
-            field5: self.field5,
-        }
-    }
-}
-
-/// assigning field 5 if field 3 is set
-impl<'a, T, F1, F2, F4> PodBuilder<F1, F2, Assigned<&'a T>, F4, Empty>
-where
-    T: Debug + MyTrait,
-{
-    fn field5(
-        self,
-        field5: Option<T>,
-    ) -> PodBuilder<F1, F2, Assigned<&'a T>, F4, Assigned<Option<T>>> {
-        PodBuilder {
-            field1: self.field1,
-            field2: self.field2,
-            field3: self.field3,
-            field4: self.field4,
-            field5: Assigned(field5),
-        }
-    }
-}
-
-/// assigning field 5 if field 3 is not set
-impl<F1, F2, F4> PodBuilder<F1, F2, Empty, F4, Empty> {
-    fn field5<T>(self, field5: Option<T>) -> PodBuilder<F1, F2, Empty, F4, Assigned<Option<T>>>
-    where
-        T: Debug + MyTrait,
-    {
-        PodBuilder {
-            field1: self.field1,
-            field2: self.field2,
-            field3: Empty,
-            field4: self.field4,
-            field5: Assigned(field5),
         }
     }
 }
@@ -227,8 +188,10 @@ where
 
 #[test]
 fn test_foo() {
-    foo(true);
-    foo(false);
+    foo(true, true);
+    foo(true, false);
+    foo(false, true);
+    foo(false, false);
 }
 
 impl MyTrait for i32 {
@@ -239,23 +202,33 @@ impl MyTrait for String {
     type AssocType = usize;
 }
 
-fn foo(cond: bool) {
+fn foo(cond: bool, othercond: bool) {
     let s = String::new();
-    let builder = PodBuilder::new().field1(1.).field3(&s);
+    let builder = PodBuilder::new().field1(1.);
     let pod = PodBuilder::new()
         .field2(1f64)
         .field1(337.)
-        .field3(&String::new())
         .field5(Some("hi".into()))
+        .field3(&String::new())
         .field4(1)
         .build();
     if cond {
-        let builder = builder.field2("foo").field4(1).field5(None).build();
+        let builder = builder
+            // .field3(&1i32)
+            .field2("foo");
+        // .field4(1)
+        // .build();
+        if othercond {
+            let builder = builder.field5(None).field4(1).field3(&s).build();
+        } else {
+            let builder = builder.field5(None).field4(1.).field3(&1).build();
+        }
     } else {
         let builder = builder
-            .field4(2)
-            .field2(1)
+            .field3(&s)
             .field5(Some("hi".into()))
+            .field2(1)
+            .field4(2)
             .build();
     }
 }
