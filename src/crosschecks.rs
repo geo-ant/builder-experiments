@@ -80,7 +80,7 @@ pub fn test_stemcells(cond: bool) {
         // let foo = stemcell.second(3f32).build();
     }
 
-    let stemcell = FooConstTyped::builder().first(1);
+    let stemcell = FooConstTypedBuilder::new().first(1);
     if cond {
         let foo = stemcell.second(2).build();
     } else {
